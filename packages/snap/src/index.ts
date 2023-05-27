@@ -28,7 +28,7 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
       const aa = await getAbstractAccount();
       const address = aa.getSender()
 
-      return snap.request({
+      await snap.request({
         method: 'snap_dialog',
         params: {
           type: 'confirmation',
@@ -41,20 +41,37 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
           ]),
         },
       });
-      break;
+      return address;
     }
     case 'sendtx':{
       const aa = await getAbstractAccount();
       const client = await Client.init(rpcUrl,entryPoint)
 
-      const target = ethers.utils.getAddress('0x28a292f4dC182492F7E23CFda4354bff688f6ea8');
-      const value = ethers.utils.parseEther('0.001');
+      const target = request.params.to;
+      const value = request.params.value;
+      const data = request.params.data;
 
-      const res = await client.sendUserOperation(aa.execute(target, value,"0x"));
+      const confirm = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'confirmation',
+          content: panel([
+            heading('Transaction request'),
+            divider(),
+            text(`Do you want to send **${value}** to`),
+            text('The address :'),
+            text(`**${target}**`),
+          ]),
+        },
+      });
+
+      if(confirm){
+
+      const res = await client.sendUserOperation(aa.execute(target, value,data));
 
       const ev = await res.wait();
 
-      return snap.request({
+      await snap.request({
         method: 'snap_dialog',
         params: {
           type: 'confirmation',
@@ -66,6 +83,23 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
           ]),
         },
       });
+      
+      const txhash = ev.transactionHash;
+      return txhash;
+    }
+      else{
+        return snap.request({
+          method: 'snap_dialog',
+          params: {
+            type: 'confirmation',
+            content: panel([
+              heading('Transaction cancelled'),
+              divider(),
+              text(`Transaction cancelled`),
+            ]),
+          },
+        });
+      }
     }
     default:
       throw new Error('Method not found.');
