@@ -9,7 +9,18 @@ const paymasterAPI =
 const rpcUrl =
   'https://api.stackup.sh/v1/node/09b0b15c992db3bc056c367840e10df3e816ea4a80a6a144d06d4e3f6a6547d1';
 
+  const paymasterconfig = {
+    "rpcUrl": paymasterAPI,
+    "context": { "type": "payg" }
+  }
+
+  const paymaster = Presets.Middleware.verifyingPaymaster(
+      paymasterconfig.rpcUrl,
+      paymasterconfig.context
+    )
+
 export const getAbstractAccount = async () => {
+
   const pvtkey = await await snap.request({
     method: 'snap_getEntropy',
     params: {
@@ -26,6 +37,7 @@ export const getAbstractAccount = async () => {
     rpcUrl,
     entryPoint,
     factoryAddress,
+    paymaster
   );
 
   return simpleAccount;
