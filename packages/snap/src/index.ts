@@ -28,7 +28,7 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
       const aa = await getAbstractAccount();
       const address = aa.getSender()
 
-      await snap.request({
+      const res = await snap.request({
         method: 'snap_dialog',
         params: {
           type: 'confirmation',
@@ -41,7 +41,12 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
           ]),
         },
       });
+
+      if(res){
       return address;
+      }else{
+        return false;
+      }
     }
     case 'sendtx':{
       const aa = await getAbstractAccount();
