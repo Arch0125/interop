@@ -5,6 +5,7 @@ import {ethers} from 'ethers';
 import { getAbstractAccount } from './utils/initaccount';
 import { SimpleAccountAPI } from '@account-abstraction/sdk';
 import { Client, Presets } from "userop";
+import { stackupbundler } from './utils/stackupbundler';
 
 const entryPoint = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
 const factoryAddress = '0x9406Cc6185a346906296840746125a0E44976454';
@@ -49,61 +50,29 @@ export const onRpcRequest: OnRpcRequestHandler = async({ origin, request }) => {
       }
     }
     case 'sendtx':{
-      const aa = await getAbstractAccount();
-      const client = await Client.init(rpcUrl,entryPoint)
+
+      const paymsterchoice = await snap.request({
+        method: 'snap_dialog',
+        params: {
+          type: 'prompt',
+          content: panel([
+            heading('Choose Paymaster for Transaction'),
+            text('1 StackUp'),
+            text('2 Pimlico'),
+            text('3 Pimlico ERC20 Paymaster'),
+            divider(),
+            text('For ERC20 paymaster you need to have USDC in your Smart Wallet')
+          ]),
+          placeholder: 'Choose 1, 2 or 3',
+        },
+      });
 
       const target = request.params.to;
       const value = request.params.value;
       const data = request.params.data;
 
-      const confirm = await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'confirmation',
-          content: panel([
-            heading('Transaction request'),
-            divider(),
-            text(`Do you want to send **${value}** to`),
-            text('The address :'),
-            text(`**${target}**`),
-          ]),
-        },
-      });
-
-      if(confirm){
-
-      const res = await client.sendUserOperation(aa.execute(target, value,data));
-
-      const ev = await res.wait();
-
-      await snap.request({
-        method: 'snap_dialog',
-        params: {
-          type: 'confirmation',
-          content: panel([
-            heading('Transaction sent'),
-            divider(),
-            text(`Transaction hash :`),
-            text(`**${ev.transactionHash}**`),
-          ]),
-        },
-      });
-      
-      const txhash = ev.transactionHash;
-      return txhash;
-    }
-      else{
-        return snap.request({
-          method: 'snap_dialog',
-          params: {
-            type: 'confirmation',
-            content: panel([
-              heading('Transaction cancelled'),
-              divider(),
-              text(`Transaction cancelled`),
-            ]),
-          },
-        });
+      if(paymsterchoice == '1'){
+      await stackupbundler(target,value,data);
       }
     }
     default:
