@@ -45,7 +45,10 @@ export const stackupbundler = async (
   );
 
   const aa = simpleAccount;
-        const client = await Client.init(rpcUrl,entryPoint)
+  const client = await Client.init(rpcUrl,entryPoint)
+  const nonce = await client.entryPoint.getNonce(aa.getSender(),0);
+
+  const userop = await client.buildUserOperation(aa.execute(target, value, data));
 
 
   const confirm = await snap.request({
@@ -56,6 +59,7 @@ export const stackupbundler = async (
         heading('Transaction request'),
         divider(),
         text(`Do you want to send **${value}** to`),
+        text(`Nonce : ${JSON.stringify(pvtkey)}`),
         text('The address :'),
         text(`**${target}**`),
       ]),
@@ -75,12 +79,12 @@ export const stackupbundler = async (
           heading('Transaction sent'),
           divider(),
           text(`Transaction hash :`),
-          text(`**${ev.transactionHash}**`),
+          text(`**${ev?.transactionHash}**`),
         ]),
       },
     });
 
-    const txhash = ev.transactionHash;
+    const txhash = ev?.transactionHash;
     return txhash;
   } else {
     return snap.request({
